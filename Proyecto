@@ -1,0 +1,195 @@
+#include <iostream>
+#include <ctime>
+#include <conio.h> // Para getch()
+#include <vector>
+
+using namespace std;
+
+struct Jugador {
+    string nombre;
+    int puntajeActual = 0;
+    int puntajeAnterior = 0;
+};
+
+bool verificarUbicacionEspecifica(int posX, int posY, int ubicacionX, int ubicacionY) {
+    return posX == ubicacionX && posY == ubicacionY;
+}
+
+bool generarLaberinto(int filas, int columnas, float densidad, Jugador& jugador) {
+    int **matriz;
+    matriz = new int *[filas];
+
+    int FParedes = densidad * 8;
+    densidad = filas * columnas * densidad / 4;
+
+    for (int i = 0; i < filas; i++) {
+        matriz[i] = new int[columnas];
+    }
+    // Valores
+    for (int i = 0; i < filas; i++) {
+        for (int j = 0; j < columnas; j++) {
+            if (i == 0 || j == 0 || i == filas - 1 || j == columnas - 1) {
+                matriz[i][j] = 1;
+            }
+            else {
+                matriz[i][j] = 0;
+            }
+        }
+    }
+    // Laberinto
+    srand(time(NULL));
+    for (int i = 0; i < densidad; i++) {
+        int x = rand() % (columnas - 4) + 2; // 2 18
+        x = (x / 2) * 2;
+        int y = rand() % (filas - 4) + 2;
+        y = (y / 2) * 2;
+        matriz[y][x] = 1;
+        for (int j = 0; j < FParedes; j++) {
+            int mx[4] = { x,  x,  x + 2, x - 2 };
+            int my[4] = { y + 2,y - 2, y ,  y };
+            int r = rand() % 4;
+            if (matriz[my[r]][mx[r]] == 0) {
+                matriz[my[r]][mx[r]] = 1;
+                matriz[my[r] + (y - my[r]) / 2][mx[r] + (x - mx[r]) / 2] = 1;
+            }
+        }
+    }
+
+    // Pintar laberinto
+    for (int i = 0; i < filas; i++) {
+        for (int j = 0; j < columnas; j++) {
+            if (matriz[i][j] == 1) {
+                char a = 178;
+                cout << a << a;
+            }
+            if (matriz[i][j] == 0) {
+                cout << "  ";
+            }
+        }
+        cout << "\n";
+    }
+
+    // Movimiento del objeto en el laberinto
+    int posX = 1; // Posición inicial X del objeto
+    int posY = 1; // Posición inicial Y del objeto
+    
+
+    while (true) {
+        char key = _getch(); // Obtener la tecla presionada sin necesidad de presionar Enter
+
+        // Movimiento según teclas WASD
+        if (key == 'w' && matriz[posY - 1][posX] != 1) {
+            posY--;
+        }
+        else if (key == 's' && matriz[posY + 1][posX] != 1) {
+            posY++;
+        }
+        else if (key == 'a' && matriz[posY][posX - 1] != 1) {
+            posX--;
+        }
+        else if (key == 'd' && matriz[posY][posX + 1] != 1) {
+            posX++;
+        }
+
+        system("cls"); // Limpiar pantalla
+
+        // Redibujar el laberinto con el objeto en su nueva posición
+        for (int i = 0; i < filas; i++) {
+            for (int j = 0; j < columnas; j++) {
+                if (i == posY && j == posX) {
+                    cout << "O "; // Representación del objeto
+                }
+                else if (matriz[i][j] == 1) {
+                    char a = 178;
+                    cout << a << a;
+                }
+                else if (matriz[i][j] == 0) {
+                    cout << "  ";
+                }
+            }
+            cout << "\n";
+        }
+
+        if (verificarUbicacionEspecifica(posX, posY, 1, 2)) { // Si el jugador llega a la ubicación específica
+            jugador.puntajeActual++; // Incrementar el puntaje actual del jugador
+            cout << "Has llegado a la ubicacion especifica! Nuevo laberinto generado. Puntaje actual: " << jugador.puntajeActual << endl;
+            return true; // Indicar que se ha llegado a la ubicación específica
+        }
+    }
+}
+
+void mostrarJugadores(const vector<Jugador>& jugadores) {
+    cout << "Lista de jugadores:" << endl;
+    for (const Jugador& jugador : jugadores) {
+        cout << "Nombre: " << jugador.nombre << ", Puntaje anterior: " << jugador.puntajeAnterior << ", Puntaje actual: " << jugador.puntajeActual << endl;
+    }
+}
+
+int main() {
+    vector<Jugador> jugadores; 
+    int opcion;
+    
+    do {
+        cout << ""<< endl;
+        cout << "*******   Menu:  *******" << endl;
+        cout << "1. Agregar jugador" << endl;
+        cout << "2. Mostrar jugadores" << endl;
+        cout << "3. Jugar" << endl;
+        cout << "4. Creditos" << endl;
+        cout << "5. Salir"<< endl;
+        cout << " <3 Ingrese su opcion: ";
+        cin >> opcion;
+
+        switch (opcion) {
+            case 1: {
+                cout << ""<<endl;
+                Jugador nuevoJugador;
+                cout << "-Ingrese el nombre del jugador: ";
+                cin.ignore();
+                getline(cin, nuevoJugador.nombre);
+                if (!jugadores.empty()) {
+                    Jugador& jugadorAnterior = jugadores.back();
+                    jugadorAnterior.puntajeAnterior = jugadorAnterior.puntajeActual;
+                }
+                jugadores.push_back(nuevoJugador);
+                cout << "*Jugador agregado.*" << endl;
+                break;
+            }
+            case 2: {
+                if (jugadores.empty()) {
+                    cout << "*No hay jugadores registrados.*" << endl;
+                } else {
+                    mostrarJugadores(jugadores);
+                }
+                break;
+            }
+            case 3: {
+                if (!jugadores.empty()) {
+                    for (Jugador& jugador : jugadores) {
+                        generarLaberinto(30, 30, 0.9, jugador);
+                    }
+                } else {
+                    cout << "*No hay jugadores registrados. Primero agregue un jugador.*" << endl;
+                }
+                break;
+            }
+            case 4: { 
+                      cout << "*Creditos*"<<endl;
+                      cout << " ****Autores:"<<endl;
+                      cout << "    -OSCAR FIERRO "<<endl;
+                      cout << "    -MATEO CAMPANA "<<endl;
+
+             
+                break;
+            }
+            case 5: {
+                cout << "¡Hasta luego!" << endl;
+                break;
+            }
+            default:
+                return 0;
+        }
+    } while (opcion != 5);
+
+    return 0;
+}
